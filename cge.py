@@ -1,6 +1,6 @@
 ##################################################
 ##################################################
-# Submodule for turning the console into a canvas #
+# Package for turning the console into a canvas #
 # / Console Game Engine #
 ##################################################
 ##################################################
@@ -240,12 +240,6 @@ class Sprite:
         max_y = self.max_y()
         return max_y - min_y + 1
 
-class VLine(Sprite):
-    def draw(self, color='red'):
-        for pos in self.positions:
-            self.scene.paint_pixel(pos, color)
-    def rotate(self, angle):
-        super().rotate(angle, self.positions[0])
 
 class Rect(Sprite):
     def __init__(self, scene, topleft, width, height):
