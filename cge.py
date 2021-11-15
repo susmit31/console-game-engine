@@ -160,6 +160,12 @@ class Scene2D:
         for y in range(self.height):
             for x in range(self.width):
                 self.reset_pixel((x,y))
+    
+    def restore_terminal(self):
+        for y in range(self.height):
+            for x in range(self.width):
+                self.edit_pixel((x,y), ' ')
+        self.render()
 
     def paint_pixel(self, pixel_loc, colour):
         if isinstance(pixel_loc, tuple):

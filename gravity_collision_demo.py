@@ -10,6 +10,7 @@ def rungame(input_handler, argdict, FPS=10):
     run_input_thread(input_handler, argdict)
     while 1:
         if argdict['quitGame']:
+            sc.restore_terminal()
             break
         sc.render()
         sc.gravitate()
