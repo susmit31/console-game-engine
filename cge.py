@@ -210,12 +210,13 @@ class Sprite:
 
     def update(self):
         self.erase()
-        if self.max_y() < self.scene.height-1 - self.velocity.y:
+        max_y = self.max_y()
+        if max_y + self.velocity.y < self.scene.height-1:
             for pos in self.positions:
                 pos.y += self.velocity.y
         else:
             for pos in self.positions:
-                pos.y += -self.max_y() + self.scene.height - 1
+                pos.y += self.scene.height - 1 - max_y
         self.draw()
 
     def max_x(self):
