@@ -250,5 +250,5 @@ class Rect(Sprite):
                 positions.append(topleft + Coord2D(i,j))
         super().__init__(scene, positions)
     
-    def rotate(self, angle):
-        super().rotate(angle, self.positions[0])
+    def rotate(self, angle, reference = self.positions[0]):
+        super().rotate(angle, reference)
