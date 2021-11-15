@@ -248,16 +248,18 @@ class Sprite:
         self.draw()
     
     def detect_collision(self, sprite2):
-        if self.max_x()+1 == sprite2.min_x():
-            return 'right'
-        elif self.min_x() == sprite2.max_x()+1:
-            return 'left'
-        elif self.max_y()+1 == sprite2.min_y():
-            return 'top'
-        elif self.min_y() == sprite2.max_y()+1:
-            return 'bottom'
-        else:
-            return False
+        if self.rigid:
+            if self.max_x()+1 == sprite2.min_x():
+                return 'right'
+            elif self.min_x() == sprite2.max_x()+1:
+                return 'left'
+            elif self.max_y()+1 == sprite2.min_y():
+                return 'top'
+            elif self.min_y() == sprite2.max_y()+1:
+                return 'bottom'
+            else:
+                return False
+        return False
 
     def max_x(self):
         return max([pos.x for pos in self.positions])
