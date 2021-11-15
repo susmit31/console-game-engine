@@ -62,12 +62,12 @@ def getChar():
 
         return answer
 
-def run_input_thread(handle_input, args):
-    inp_thread = threading.Thread(target = handle_input, args = args)
+def run_input_thread(handle_input, argdict):
+    inp_thread = threading.Thread(target = handle_input, args = (argdict,))
     inp_thread.start()
 
 ##################################################
-# 2D coordinate #
+# 2D coordinates and vectors #
 ##################################################
 class Coord2D:
     def __init__(self, x, y):
@@ -135,6 +135,7 @@ class Scene2D:
         self.height = height
         self.scene = [[BLOCKS[0]][:]*2*self.width for i in range(self.height)]
         self.sprites = []
+        self.grounds = []
     
     def render(self, reset=True):
         sys.stdout.write('\n'.join([''.join(ln) for ln in self.scene]))
@@ -168,21 +169,48 @@ class Scene2D:
     def add_sprite(self, sprite):
         self.sprites.append(sprite)
     
-    def gravitate_sprites(self):
+    def add_ground(self, ground):
+        self.grounds.append(ground)
+
+    def gravitate(self):
         for sprite in self.sprites:
-            if sprite.gravity and sprite.max_y()+sprite.velocity.y < self.height - 1:
-                sprite.velocity += Vector2D((0,1))
+            if len(self.grounds) == 0:
+                if sprite.gravity and sprite.max_y()+sprite.velocity.y < self.height - 1:
+                    sprite.velocity += Vector2D((0,1))
+                else:
+                    sprite.velocity = Vector2D((0,0))
+            else:
+                on_ground = False
+                for ground in self.grounds:
+                    if sprite.gravity and sprite.detect_collision(ground) == 'top':
+                        sprite.velocity = Vector2D((0,0))
+                        on_ground = True
+                        break
+
+                if not on_ground:
+                    if sprite.gravity and sprite.max_y()+sprite.velocity.y < self.height - 1:
+                        sprite.velocity += Vector2D((0,1))
+                    else:
+                        sprite.velocity = Vector2D((0,0))
+    
 
 
+##################################################
+# Sprites #
+##################################################
 class Sprite:
-    def __init__(self, scene, positions, gravity = False):
+    def __init__(self, scene, positions, gravity = False, rigid = True, color='red'):
         self.scene = scene
         self.positions = positions
         self.velocity = Vector2D((0,0))
         self.gravity = gravity
-        self.draw()
+        self.rigid = rigid
+        self.color = color
+        self.draw(self.color)
 
-    def draw(self, color='red'):
+    def draw(self, color=None):
+        if color is None:
+            color = self.color
         for pos in self.positions:
             self.scene.paint_pixel(pos, color)
     
@@ -218,6 +246,18 @@ class Sprite:
             for pos in self.positions:
                 pos.y += self.scene.height - 1 - max_y
         self.draw()
+    
+    def detect_collision(self, sprite2):
+        if self.max_x()+1 == sprite2.min_x():
+            return 'right'
+        elif self.min_x() == sprite2.max_x()+1:
+            return 'left'
+        elif self.max_y()+1 == sprite2.min_y():
+            return 'top'
+        elif self.min_y() == sprite2.max_y()+1:
+            return 'bottom'
+        else:
+            return False
 
     def max_x(self):
         return max([pos.x for pos in self.positions])
@@ -242,13 +282,20 @@ class Sprite:
         return max_y - min_y + 1
 
 
+##################################################
+# Rectangular sprites #
+##################################################
 class Rect(Sprite):
-    def __init__(self, scene, topleft, width, height):
+    def __init__(self, scene, topleft, width, height, color='red'):
         positions = []
+        if isinstance(topleft, tuple):
+            topleft = Coord2D(* topleft)
         for i in range(width):
             for j in range(height):
                 positions.append(topleft + Coord2D(i,j))
-        super().__init__(scene, positions)
+        super().__init__(scene, positions, color=color)
     
-    def rotate(self, angle, reference = self.positions[0]):
+    def rotate(self, angle, reference = None):
+        if reference is None:
+            reference = self.positions[0]
         super().rotate(angle, reference)
