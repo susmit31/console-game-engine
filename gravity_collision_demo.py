@@ -13,7 +13,7 @@ def rungame(input_handler, argdict, FPS=10):
             break
         sc.render()
         sc.gravitate()
-        b.update()
+        argdict['b'].update()
         time.sleep(1/FPS)
 
 def handle_input(argdict):
@@ -27,9 +27,9 @@ def handle_input(argdict):
             argdict['quitGame'] = True
             return
 
-r1 = Rect(sc, (3,3), 10, 2)
-r2 = Rect(sc, (r1.max_x()-3, r1.max_y()+5), 14, 2)
-r3 = Rect(sc, (r2.max_x()-3, r2.max_y()+5), 10, 2)
+r1 = Rect(sc, (3,3), WIDTH//3, 2)
+r2 = Rect(sc, (r1.max_x()-5, r1.max_y()+5), WIDTH//2, 2)
+r3 = Rect(sc, (r2.max_x()-3, r2.max_y()+5), WIDTH//3, 2)
 for r in (r1, r2, r3):
     sc.add_ground(r)
 
