@@ -97,23 +97,19 @@ class Coord2D:
         self.y = newpt.y + reference.y
 
 class Vector2D:
-    def __init__(self, end, start = (0,0)):
-        if isinstance(start, tuple):
-            start = Coord2D(*start)
+    def __init__(self, end):
         if isinstance(end, tuple):
             end = Coord2D(*end)
-        self.start = start
         self.end = end
-        self.x = self.end.x - self.start.x
-        self.y = self.end.y - self.start.y
+        self.x = self.end.x
+        self.y = self.end.y
 
     def __repr__(self):
         return f"{self.x}i + {self.y}j"
     
     def __add__(self, vector):
-        sum_start = self.start
         sum_end = self.end + Coord2D(vector.x, vector.y)
-        return Vector2D(sum_end, sum_start)
+        return Vector2D(sum_end)
 
     def dot(self, vector):
         return self.x*vector.x + self.y*vector.y
@@ -181,24 +177,35 @@ class Scene2D:
     def gravitate(self):
         for sprite in self.sprites:
             if len(self.grounds) == 0:
-                if sprite.gravity and sprite.max_y()+sprite.velocity.y < self.height - 1:
+                if sprite.max_y()+sprite.velocity.y < self.height - 1:
                     sprite.velocity += Vector2D((0,1))
                 else:
                     sprite.velocity = Vector2D((0,0))
             else:
                 on_ground = False
                 for ground in self.grounds:
-                    if sprite.gravity and sprite.detect_collision(ground) == 'top':
+                    if sprite.detect_collision(ground) == 'bottom':
                         sprite.velocity = Vector2D((0,0))
                         on_ground = True
                         break
-
                 if not on_ground:
-                    if sprite.gravity and sprite.max_y()+sprite.velocity.y < self.height - 1:
+                    if sprite.max_y()+sprite.velocity.y < self.height - 1:
                         sprite.velocity += Vector2D((0,1))
                     else:
                         sprite.velocity = Vector2D((0,0))
-    
+
+                sideways_collision = False
+                for ground in self.grounds:
+                    coll_dir = sprite.detect_collision(ground)
+                    if coll_dir in ['left', 'right']:
+                        sprite.lock[coll_dir] = True
+                        sideways_collision = True
+                        break
+                if not sideways_collision:
+                    for dir in sprite.lock:
+                        sprite.lock[dir] = False
+            
+            sprite.update()
 
 
 ##################################################
@@ -212,6 +219,7 @@ class Sprite:
         self.gravity = gravity
         self.rigid = rigid
         self.color = color
+        self.lock = {'left':False, 'right':False}
         self.draw(self.color)
 
     def draw(self, color=None):
@@ -239,6 +247,22 @@ class Sprite:
             pos.y = math.floor(pos.y)
         self.draw()
     
+    def jump(self):
+        self.velocity += Vector2D((0,-2))
+        self.update()
+    
+    def move_right(self):
+        if not self.lock['right']:
+            self.velocity += Vector2D((1,0))
+            self.update()
+            self.velocity += Vector2D((-1,0))
+    
+    def move_left(self):
+        if not self.lock['left']:
+            self.velocity += Vector2D((-1,0))
+            self.update()
+            self.velocity += Vector2D((1,0))
+    
     def toggle_gravity(self):
         self.gravity = not self.gravity
 
@@ -251,18 +275,32 @@ class Sprite:
         else:
             for pos in self.positions:
                 pos.y += self.scene.height - 1 - max_y
+        for pos in self.positions:
+            pos.x += self.velocity.x
         self.draw()
     
     def detect_collision(self, sprite2):
         if self.rigid:
             if self.max_x()+1 == sprite2.min_x():
-                return 'right'
+                if sprite2.min_y() <= self.max_y() <= sprite2.max_y():
+                    return 'right'
+                elif self.min_y() <= sprite2.max_y() <= self.max_y():
+                    return 'right'
             elif self.min_x() == sprite2.max_x()+1:
-                return 'left'
+                if sprite2.min_y() <= self.max_y() <= sprite2.max_y():
+                    return 'left'
+                elif self.min_y() <= sprite2.max_y() <= self.max_y():
+                    return 'left'
             elif self.max_y()+1 == sprite2.min_y():
-                return 'top'
+                if sprite2.min_x() <= self.max_x() <= sprite2.max_x():
+                    return 'bottom'
+                elif self.min_x() <= sprite2.max_x() <= self.max_x():
+                    return 'bottom'
             elif self.min_y() == sprite2.max_y()+1:
-                return 'bottom'
+                if sprite2.min_x() <= self.max_x() <= sprite2.max_x():
+                    return 'top'
+                elif self.min_x() <= sprite2.max_x() <= self.max_x():
+                    return 'top'
             else:
                 return False
         return False
