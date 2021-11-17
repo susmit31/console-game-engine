@@ -145,7 +145,8 @@ class Scene2D:
         elif isinstance(pixel_loc, tuple):
             x, y = pixel_loc[0], pixel_loc[1]
         if y > self.height -1:
-            y %= (self.height-1) 
+            y %= (self.height-1)
+        x, y = math.floor(x), math.floor(y)
         self.scene[y][2*x] = newval
         self.scene[y][2*x+1] = newval
     
@@ -175,73 +176,42 @@ class Scene2D:
     
     def add_ground(self, ground):
         self.grounds.append(ground)
-
-    def gravitate(self):
-        for sprite in self.sprites:
-            on_rightedge = sprite.max_x()==self.width
-            on_leftedge = sprite.min_x()==0
-            if len(self.grounds) == 0:
-                if sprite.max_y()+sprite.velocity.y < self.height:
-                    sprite.velocity += Vector2D((0,1))
-                else:
-                    sprite.velocity = Vector2D((0,self.height-sprite.max_y()))
-            else:
-                on_ground = False
-                for ground in self.grounds:
-                    y_distance = ground.min_y() - (sprite.max_y())
-                    if sprite.detect_collision(ground) == 'bottom':
-                        sprite.velocity = Vector2D((0,0))
-                        on_ground = True
-                        break
-                    elif 0 < y_distance and sprite.max_y() + sprite.velocity.y > ground.min_y():
-                        if ground.min_x() < sprite.max_x() <= ground.max_x() or \
-                            sprite.min_x() < ground.max_x() <= sprite.max_x():
-                            sprite.velocity = Vector2D((sprite.velocity.x, y_distance))
-                            on_ground = True
-                            break
-                if not on_ground:
-                    if sprite.max_y()+sprite.velocity.y < self.height:
-                        sprite.velocity += Vector2D((0,1))
-                    else:
-                        sprite.velocity = Vector2D((0,0))
-
-                sideways_collision = False
-                for ground in self.grounds:
-                    coll_dir = sprite.detect_collision(ground)
-                    if coll_dir in ['left', 'right']:
-                        sprite.lock[coll_dir] = True
-                        sideways_collision = True
-                        break
-                if not sideways_collision:
-                    for dir in sprite.lock:
-                        sprite.lock[dir] = False
-            if on_leftedge: sprite.lock['left'] = True
-            elif on_rightedge: sprite.lock['right'] = True
-            sprite.update()
     
     def gravitate_and_collide(self):
         for sprite in self.sprites:
             on_ground = False
+            sprite.lock['left'] = False
+            sprite.lock['right'] = False
+            min_y_dist = float('inf')
+            closest_ground = None
             for ground in self.grounds:
                 coll_dir = sprite.detect_collision(ground)
-                on_ground = coll_dir == 'bottom'
-                sideways_collision = coll_dir in ['left', 'right']
-                if sideways_collision: 
-                    sprite.lock[coll_dir] = True
-                else: sprite.lock[coll_dir] = False
-                if coll_dir in ['top','bottom']:
-                    sprite.velocity.y = 0
-                    break
-                elif coll_dir in ['right', 'left']:
-                    sprite.velocity.x = 0
-                    break
+                if coll_dir:
+                    on_ground = coll_dir == 'bottom'
+                    sideways_collision = coll_dir in ['left', 'right']
+                    if on_ground or coll_dir=='top':
+                        sprite.velocity = Vector2D((0,0))
+                        break
+                    if sideways_collision: 
+                        sprite.lock[coll_dir] = True
+                        sprite.velocity = Vector2D((0,0))
+                        break
                 else:
-                    sprite.velocity.y += 1
+                    y_dist = ground.min_y()-sprite.max_y()
+                    if 0 < y_dist < min_y_dist:
+                        closest_ground = ground
+                        min_y_dist = y_dist
             if not on_ground:
-                if sprite.velocity.y + sprite.max_y() < self.height - 1:
-                    sprite.velocity.y += 1           
+                if min_y_dist < sprite.velocity.y:
+                    sprite.velocity = Vector2D((0, min_y_dist))
+                elif sprite.velocity.y + sprite.max_y() < self.height:
+                    sprite.velocity += Vector2D((0,1))       
                 else:
-                    sprite.velocity.y = 0 
+                    sprite.velocity = Vector2D((0,self.height - sprite.max_y()))
+            if sprite.max_x() == self.width:
+                sprite.lock['right'] = True
+            elif sprite.min_x() == 0:
+                sprite.lock['left'] = True
             sprite.update()
 
 
@@ -285,7 +255,7 @@ class Sprite:
         self.draw()
     
     def jump(self):
-        self.velocity += Vector2D((0,-2))
+        self.velocity += Vector2D((0,-3))
         self.update()
     
     def move_right(self):
@@ -312,16 +282,10 @@ class Sprite:
     
     def detect_collision(self, obj):
         if self.rigid:
-            if isinstance(obj, Sprite):
-                obj_min_x = obj.min_x()
-                obj_max_x = obj.max_x()
-                obj_min_y = obj.min_y()
-                obj_max_y = obj.max_y()
-            elif isinstance(obj, Scene2D):
-                obj_min_x = 0
-                obj_max_x = obj.width - 1
-                obj_min_y = 0
-                obj_max_y = obj.height - 1
+            obj_min_x = obj.min_x()
+            obj_max_x = obj.max_x()
+            obj_min_y = obj.min_y()
+            obj_max_y = obj.max_y()
             if self.max_x() == obj_min_x:
                 if obj_min_y < self.max_y() <= obj_max_y:
                     return 'right'

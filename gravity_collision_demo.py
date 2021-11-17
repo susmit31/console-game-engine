@@ -13,7 +13,7 @@ def rungame(input_handler, argdict, FPS=5):
             sc.restore_terminal()
             break
         sc.render()
-        sc.gravitate()
+        sc.gravitate_and_collide()
         time.sleep(1/FPS)
 
 def handle_input(argdict):
