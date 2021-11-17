@@ -191,16 +191,18 @@ class Scene2D:
                     sideways_collision = coll_dir in ['left', 'right']
                     if on_ground or coll_dir=='top':
                         sprite.velocity = Vector2D((0,0))
-                        break
-                    if sideways_collision: 
+                    elif sideways_collision: 
                         sprite.lock[coll_dir] = True
                         sprite.velocity = Vector2D((0,0))
-                        break
+                    break
                 else:
                     y_dist = ground.min_y()-sprite.max_y()
+                    x_overlap = ground.min_x() < sprite.max_x() <= ground.max_x() or\
+                        sprite.min_x() < ground.max_x() <= sprite.max_x()
                     if 0 < y_dist < min_y_dist:
-                        closest_ground = ground
-                        min_y_dist = y_dist
+                        if x_overlap:
+                            closest_ground = ground
+                            min_y_dist = y_dist
             if not on_ground:
                 if min_y_dist < sprite.velocity.y:
                     sprite.velocity = Vector2D((0, min_y_dist))
@@ -255,8 +257,9 @@ class Sprite:
         self.draw()
     
     def jump(self):
-        self.velocity += Vector2D((0,-3))
-        self.update()
+        if self.velocity.y == 0:
+            self.velocity += Vector2D((0,-2))
+            self.update()
     
     def move_right(self):
         if not self.lock['right']:
