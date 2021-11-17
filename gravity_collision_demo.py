@@ -37,7 +37,7 @@ r5 = Rect(sc, (sc.width-7, sc.height-2), 4, 2)
 for r in (r1, r2, r3, r5):
     sc.add_ground(r)
 
-box = Rect(sc, (r1.min_x() + 2, r1.min_y() -2), 2, 2, 'cyan')
+box = Rect(sc, (r1.min_x() + 1, r1.min_y() -2), 2, 2, 'cyan')
 # box = Rect(sc, (15, sc.height-3), 2, 2, 'cyan')
 sc.add_sprite(box)
 box.toggle_gravity()
