@@ -28,6 +28,7 @@ def handle_input(argdict):
         elif ch=='q':
             argdict['quitGame'] = True
             return
+#        sc.gravitate_and_collide()
 
 r1 = Rect(sc, (3,3), WIDTH//3, 2)
 r2 = Rect(sc, (r1.max_x()-5, r1.max_y()+5), WIDTH//2, 2)
@@ -43,3 +44,4 @@ sc.add_sprite(box)
 box.toggle_gravity()
 
 rungame(handle_input, {'b':box, 'quitGame': False}, FPS=32)
+

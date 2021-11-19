@@ -185,12 +185,14 @@ class Scene2D:
             min_y_dist = float('inf')
             closest_ground = None
             for ground in self.grounds:
+                bouncy = 0
                 coll_dir = sprite.detect_collision(ground)
                 if coll_dir:
                     on_ground = coll_dir == 'bottom'
                     sideways_collision = coll_dir in ['left', 'right']
                     if on_ground or coll_dir=='top':
-                        sprite.velocity = Vector2D((0,0))
+                        reflected_velocity = Vector2D((0, -sprite.velocity.y/10 if bouncy else 0))
+                        sprite.velocity = reflected_velocity
                     elif sideways_collision: 
                         sprite.lock[coll_dir] = True
                         sprite.velocity = Vector2D((0,0))
@@ -263,15 +265,17 @@ class Sprite:
     
     def move_right(self):
         if not self.lock['right']:
-            self.velocity += Vector2D((1,0))
+            prev_y_velocity = self.velocity.y
+            self.velocity += Vector2D((1,-prev_y_velocity))
             self.update()
-            self.velocity += Vector2D((-1,0))
+            self.velocity += Vector2D((-1,prev_y_velocity))
     
     def move_left(self):
         if not self.lock['left']:
-            self.velocity += Vector2D((-1,0))
+            prev_y_velocity = self.velocity.y
+            self.velocity += Vector2D((-1,-prev_y_velocity))
             self.update()
-            self.velocity += Vector2D((1,0))
+            self.velocity += Vector2D((1,prev_y_velocity))
     
     def toggle_gravity(self):
         self.gravity = not self.gravity
