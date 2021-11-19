@@ -177,41 +177,54 @@ class Scene2D:
     def add_ground(self, ground):
         self.grounds.append(ground)
     
+    def closest_ground_below_sprite(self, sprite):
+        min_y_dist = float('inf')
+        closest_ground = None
+        for ground in self.grounds:
+            y_dist = ground.min_y()-sprite.max_y()
+            x_overlap = ground.min_x() < sprite.max_x() <= ground.max_x() or\
+                sprite.min_x() < ground.max_x() <= sprite.max_x()
+            if 0 < y_dist < min_y_dist:
+                if x_overlap:
+                    closest_ground = ground
+                    min_y_dist = y_dist
+        return closest_ground, min_y_dist
     def gravitate_and_collide(self):
         for sprite in self.sprites:
             on_ground = False
+            bouncy = False
+            bounciness = 1.2
             sprite.lock['left'] = False
             sprite.lock['right'] = False
             min_y_dist = float('inf')
             closest_ground = None
             for ground in self.grounds:
-                bouncy = 0
                 coll_dir = sprite.detect_collision(ground)
                 if coll_dir:
                     on_ground = coll_dir == 'bottom'
                     sideways_collision = coll_dir in ['left', 'right']
                     if on_ground or coll_dir=='top':
-                        reflected_velocity = Vector2D((0, -sprite.velocity.y/10 if bouncy else 0))
+                        reflected_velocity = Vector2D((0, -sprite.velocity.y/bounciness if bouncy else 0))
+                        if 0 > reflected_velocity.y >= -.5: reflected_velocity.y = 0
                         sprite.velocity = reflected_velocity
                     elif sideways_collision: 
                         sprite.lock[coll_dir] = True
                         sprite.velocity = Vector2D((0,0))
                     break
-                else:
-                    y_dist = ground.min_y()-sprite.max_y()
-                    x_overlap = ground.min_x() < sprite.max_x() <= ground.max_x() or\
-                        sprite.min_x() < ground.max_x() <= sprite.max_x()
-                    if 0 < y_dist < min_y_dist:
-                        if x_overlap:
-                            closest_ground = ground
-                            min_y_dist = y_dist
+                
             if not on_ground:
-                if min_y_dist < sprite.velocity.y:
-                    sprite.velocity = Vector2D((0, min_y_dist))
-                elif sprite.velocity.y + sprite.max_y() < self.height:
-                    sprite.velocity += Vector2D((0,1))       
+                if sprite.velocity.y + sprite.max_y() < self.height:
+                    sprite.velocity += Vector2D((0,1))
+                    closest_ground, min_y_dist = self.closest_ground_below_sprite(sprite)  
+                    if min_y_dist < sprite.velocity.y:
+                        sprite.velocity = Vector2D((0, min_y_dist))   
                 else:
-                    sprite.velocity = Vector2D((0,self.height - sprite.max_y()))
+                    if self.height == sprite.max_y():
+                        reflected_velocity = Vector2D((0, -sprite.velocity.y/bounciness if bouncy else 0))
+                        if 0 > reflected_velocity.y >= -.5: reflected_velocity.y = 0
+                        sprite.velocity = reflected_velocity
+                    else:
+                        sprite.velocity = Vector2D((0,self.height - sprite.max_y()))
             if sprite.max_x() == self.width:
                 sprite.lock['right'] = True
             elif sprite.min_x() == 0:
