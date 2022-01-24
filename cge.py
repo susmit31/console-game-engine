@@ -33,7 +33,10 @@ def move_cursor(line, col):
     coldir = "C" if col > 0 else "D"
     
     linecode = f"{base}{abs(line)}{linedir}"
+    if line == 0: linecode = ""
     colcode = f"{base}{abs(col)}{coldir}"
+    if col == 0: colcode = ""
+
     sys.stdout.write(linecode)
     sys.stdout.write(colcode) 
 
@@ -182,13 +185,13 @@ class Scene2D:
         closest_ground = None
         for ground in self.grounds:
             y_dist = ground.min_y()-sprite.max_y()
-            x_overlap = ground.min_x() < sprite.max_x() <= ground.max_x() or\
-                sprite.min_x() < ground.max_x() <= sprite.max_x()
+            x_overlap = sprite.x_overlap(ground)
             if 0 < y_dist < min_y_dist:
                 if x_overlap:
                     closest_ground = ground
                     min_y_dist = y_dist
         return closest_ground, min_y_dist
+
     def gravitate_and_collide(self):
         for sprite in self.sprites:
             on_ground = False
@@ -216,7 +219,7 @@ class Scene2D:
                 if sprite.velocity.y + sprite.max_y() < self.height:
                     sprite.velocity += Vector2D((0,1))
                     closest_ground, min_y_dist = self.closest_ground_below_sprite(sprite)  
-                    if min_y_dist < sprite.velocity.y:
+                    if 0 < min_y_dist < sprite.velocity.y:
                         sprite.velocity = Vector2D((0, min_y_dist))   
                 else:
                     if self.height == sprite.max_y():
@@ -279,6 +282,7 @@ class Sprite:
     def move_right(self):
         if not self.lock['right']:
             prev_y_velocity = self.velocity.y
+            closest_ground, min_y_dist = self.scene.closest_ground_below_sprite(self)
             self.velocity += Vector2D((1,-prev_y_velocity))
             self.update()
             self.velocity += Vector2D((-1,prev_y_velocity))
@@ -300,32 +304,36 @@ class Sprite:
             pos.x += self.velocity.x
         self.draw()
     
+    def x_overlap(self, sprite2):
+        if self.min_x() < sprite2.max_x() <= self.max_x():
+            return True
+        elif sprite2.min_x() < self.max_x() <= sprite2.max_x():
+            return True
+        else:
+            return False
+    
+    def y_overlap(self, sprite2):
+        if self.min_y() < sprite2.max_y() <= self.max_y():
+            return True
+        elif sprite2.min_y() < self.max_y() <= sprite2.max_y():
+            return True
+        else:
+            return False
+
     def detect_collision(self, obj):
         if self.rigid:
             obj_min_x = obj.min_x()
             obj_max_x = obj.max_x()
             obj_min_y = obj.min_y()
             obj_max_y = obj.max_y()
-            if self.max_x() == obj_min_x:
-                if obj_min_y < self.max_y() <= obj_max_y:
-                    return 'right'
-                elif self.min_y() <= obj_max_y <= self.max_y():
-                    return 'right'
-            elif self.min_x() == obj_max_x:
-                if obj_min_y < self.max_y() <= obj_max_y:
-                    return 'left'
-                elif self.min_y() <= obj_max_y <= self.max_y():
-                    return 'left'
-            elif self.max_y() == obj_min_y:
-                if obj_min_x < self.max_x() <= obj_max_x:
-                    return 'bottom'
-                elif self.min_x() <= obj_max_x <= self.max_x():
-                    return 'bottom'
-            elif self.min_y() == obj_max_y:
-                if obj_min_x < self.max_x() <= obj_max_x:
-                    return 'top'
-                elif self.min_x() < obj_max_x <= self.max_x():
-                    return 'top'
+            if self.max_x() == obj_min_x and self.y_overlap(obj):
+                return 'right'
+            elif self.min_x() == obj_max_x and self.y_overlap(obj):
+                return 'left'
+            elif self.max_y() == obj_min_y and self.x_overlap(obj):
+                return 'bottom'
+            elif self.min_y() == obj_max_y and self.x_overlap(obj):
+                return 'top'
             else:
                 return False
         return False
